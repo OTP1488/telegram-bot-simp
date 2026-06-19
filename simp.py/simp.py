@@ -13,8 +13,11 @@ from telegram.ext import (
 )
 
 
-BOT_TOKEN = "8858371855:AAFzWawMRK4Gg9NTyutAxYhgfLSq8Zk3gL8"
-SIMPLELOGIN_API_KEY = "uhmoblgrrbegpsqvyjpcvcuzagarjcyyetoxgzdakolhiqetzmfpubfptmhb"
+import os
+
+BOT_TOKEN = os.getenv("8858371855:AAFzWawMRK4Gg9NTyutAxYhgfLSq8Zk3gL8
+")
+SIMPLELOGIN_API_KEY = os.getenv("uhmoblgrrbegpsqvyjpcvcuzagarjcyyetoxgzdakolhiqetzmfpubfptmhb")
 
 # ==========================
 # ЛОГИ

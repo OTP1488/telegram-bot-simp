@@ -5,7 +5,7 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
 
 # =========================
-# 🔧 CONFIG (ВСТАВЬ СВОИ ДАННЫЕ)
+# CONFIG
 # =========================
 
 BOT_TOKEN = "8870233137:AAEoxO2rYc85mGJJw0QqFP7qM2QxiE5g4Q8"
@@ -16,7 +16,7 @@ SECOND_CHAT_ID = -5536723301
 TELOBAL_API_URL = "https://my.telobal.com/api/v1/sms/inbox/"
 
 TOKENS = {
-    "MAIN": "40009eefff36915e11beb235e5bff36f73bf5310ad1c8cd2ed555c8011bb4d77",
+    "MAIN": "40009eefff36915e11beb235e5bff36f73bf5310ad1c8cd2ed555c8011bb4d77"
     "SECOND": "4d744f96ea88775c823bd27b20c9a77525c6c18c6c8c63a60885a2a908108a49"
 }
 
@@ -25,65 +25,91 @@ STYLE = {
     "SECOND": "🔵 SECOND"
 }
 
-SPECIAL_NUMBERS = []
 seen_sms = set()
 
 # =========================
-# UI
+# MENU (ПАНЕЛЬ)
 # =========================
 
-def menu():
+def panel_menu():
     return InlineKeyboardMarkup([
-        [InlineKeyboardButton("📱 SMS BOT ACTIVE", callback_data="info")],
-        [InlineKeyboardButton("📱 Мои номера", callback_data="numbers")]
+        [InlineKeyboardButton("📱 Список номеров", callback_data="numbers")],
+        [InlineKeyboardButton("📡 Статус бота", callback_data="status")]
     ])
+
+def back_menu():
+    return InlineKeyboardMarkup([
+        [InlineKeyboardButton("🔙 Назад", callback_data="panel")]
+    ])
+
+# =========================
+# START / PANEL
+# =========================
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "📱 SMS BOT",
-        reply_markup=menu()
+        "📱 SMS BOT PANEL",
+        reply_markup=panel_menu()
+    )
+
+async def panel(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(
+        "📱 ПАНЕЛЬ УПРАВЛЕНИЯ",
+        reply_markup=panel_menu()
     )
 
 # =========================
-# CALLBACK HANDLER
+# CALLBACKS
 # =========================
 
 async def handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
     await q.answer()
 
-    if q.data == "info":
-        await q.edit_message_text("📡 Bot running", reply_markup=menu())
-
-    elif q.data == "numbers":
+    # 📱 PANEL
+    if q.data == "panel":
         await q.edit_message_text(
-            f"📱 ТВОИ НОМЕРА\n\n"
+            "📱 ПАНЕЛЬ УПРАВЛЕНИЯ",
+            reply_markup=panel_menu()
+        )
+
+    # 📋 СПИСОК НОМЕРОВ
+    elif q.data == "numbers":
+        text = (
+            "📋 СПИСОК НОМЕРОВ\n\n"
             f"🟢 MAIN:\n{TOKENS['MAIN']}\n\n"
-            f"🔵 SECOND:\n{TOKENS['SECOND']}",
+            f"🔵 SECOND:\n{TOKENS['SECOND']}"
+        )
+
+        await q.edit_message_text(
+            text,
             reply_markup=InlineKeyboardMarkup([
-                [InlineKeyboardButton("🟢 MAIN", callback_data="main_nums")],
-                [InlineKeyboardButton("🔵 SECOND", callback_data="second_nums")],
-                [InlineKeyboardButton("🔙 Назад", callback_data="back")]
+                [InlineKeyboardButton("🟢 MAIN", callback_data="main")],
+                [InlineKeyboardButton("🔵 SECOND", callback_data="second")],
+                [InlineKeyboardButton("🔙 Назад", callback_data="panel")]
             ])
         )
 
-    elif q.data == "main_nums":
+    elif q.data == "main":
         await q.edit_message_text(
-            f"🟢 MAIN:\n{TOKENS['MAIN']}",
-            reply_markup=menu()
+            f"🟢 MAIN\n\n{TOKENS['MAIN']}",
+            reply_markup=back_menu()
         )
 
-    elif q.data == "second_nums":
+    elif q.data == "second":
         await q.edit_message_text(
-            f"🔵 SECOND:\n{TOKENS['SECOND']}",
-            reply_markup=menu()
+            f"🔵 SECOND\n\n{TOKENS['SECOND']}",
+            reply_markup=back_menu()
         )
 
-    elif q.data == "back":
-        await q.edit_message_text("📱 SMS BOT", reply_markup=menu())
+    elif q.data == "status":
+        await q.edit_message_text(
+            "📡 Бот работает нормально",
+            reply_markup=panel_menu()
+        )
 
 # =========================
-# API
+# SMS API
 # =========================
 
 def get_sms(token):
@@ -97,20 +123,10 @@ def get_sms(token):
         if r.status_code == 200:
             return r.json().get("result", [])
 
-    except Exception as e:
-        print("API ERROR:", e)
+    except:
+        pass
 
     return []
-
-# =========================
-# SEND
-# =========================
-
-async def send(app, text):
-    try:
-        await app.bot.send_message(chat_id=MAIN_CHAT_ID, text=text)
-    except Exception as e:
-        print("SEND ERROR:", e)
 
 # =========================
 # WORKER
@@ -137,7 +153,11 @@ async def worker(app):
                     f"💬 {message}"
                 )
 
-                await send(app, text)
+                try:
+                    await app.bot.send_message(chat_id=MAIN_CHAT_ID, text=text)
+                except:
+                    pass
+
                 seen_sms.add(sms_id)
 
         await asyncio.sleep(5)
@@ -150,6 +170,7 @@ def main():
     app = Application.builder().token(BOT_TOKEN).build()
 
     app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("panel", panel))
     app.add_handler(CallbackQueryHandler(handler))
 
     async def post_init(app):
@@ -158,7 +179,6 @@ def main():
     app.post_init = post_init
 
     app.run_polling()
-
 
 if __name__ == "__main__":
     main()

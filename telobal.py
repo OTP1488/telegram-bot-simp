@@ -51,8 +51,8 @@ def normalize(num):
     return ''.join(filter(str.isdigit, str(num)))
 
 ZPD_NUMBERS = [
-    normalize("380947100463"),
-    normalize("380947100259"),
+    normalize("0"),
+    normalize("0"),
     normalize("0"),
 ]
 

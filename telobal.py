@@ -47,6 +47,8 @@ def save_seen():
     with open(SEEN_FILE, "w") as f:
         json.dump(list(seen_sms), f)
 
+    print("SAVED:", len(seen_sms))
+
 def normalize(num):
     return ''.join(filter(str.isdigit, str(num)))
 
@@ -83,6 +85,7 @@ KKAZANTSEVV_NUMBERS = [
 ]
 
 seen_sms = load_seen()
+print("LOADED SMS:", len(seen_sms))
 
 # =========================
 # UI

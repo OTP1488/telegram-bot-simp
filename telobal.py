@@ -3,10 +3,10 @@ import requests
 import os
 import psycopg2
 
-DATABASE_URL = os.getenv(postgres:voQbMdZyzvLkQuFobYhYLPYSEJtrQvjr@postgres.railway.internal:5432/railway")
-
-
 # ================= DB =================
+
+DATABASE_URL = os.getenv("postgres:voQbMdZyzvLkQuFobYhYLPYSEJtrQvjr@postgres.railway.internal:5432/railway")
+
 
 def get_conn():
     return psycopg2.connect(DATABASE_URL)
@@ -77,7 +77,7 @@ STYLE = {
 }
 
 
-# ================= GROUPS (3 номера) =================
+# ================= GROUPS (3 номера в каждой) =================
 
 def normalize(n):
     return ''.join(filter(str.isdigit, str(n)))
@@ -112,24 +112,6 @@ KKAZANTSEVV_NUMBERS = [
     normalize("380947100981"),
     normalize("380947100597"),
 ]
-
-
-# ================= UI =================
-
-def menu():
-    return InlineKeyboardMarkup([
-        [InlineKeyboardButton("📱 SMS BOT ACTIVE", callback_data="info")]
-    ])
-
-
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("SMS bot started", reply_markup=menu())
-
-
-async def handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    q = update.callback_query
-    await q.answer()
-    await q.edit_message_text("Bot running", reply_markup=menu())
 
 
 # ================= API =================
@@ -189,7 +171,6 @@ async def worker(app):
                     continue
 
                 dest = sms.get("destination", "")
-
                 if isinstance(dest, dict):
                     recipient = dest.get("number", "")
                 else:
@@ -214,7 +195,23 @@ async def worker(app):
         await asyncio.sleep(5)
 
 
-# ================= MAIN =================
+# ================= BOT =================
+
+def menu():
+    return InlineKeyboardMarkup([
+        [InlineKeyboardButton("📱 SMS BOT ACTIVE", callback_data="info")]
+    ])
+
+
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("SMS bot started", reply_markup=menu())
+
+
+async def handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    q = update.callback_query
+    await q.answer()
+    await q.edit_message_text("Bot running", reply_markup=menu())
+
 
 def main():
     init_db()
@@ -227,6 +224,7 @@ def main():
         asyncio.create_task(worker(app))
 
     app.post_init = post_init
+
     app.run_polling()
 
 

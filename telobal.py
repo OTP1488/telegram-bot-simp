@@ -1,28 +1,15 @@
 import asyncio
 import requests
-import json
 import os
 import psycopg2
 
-DATABASE_URL = os.getenv("postgresql://postgres:voQbMdZyzvLkQuFobYhYLPYSEJtrQvjr@postgres.railway.internal:5432/railway")
+DATABASE_URL = os.getenv("DATABASE_URL")
 
-SEEN_FILE = "seen_sms.json"
 
-def load_seen():
-    if os.path.exists(SEEN_FILE):
-        with open(SEEN_FILE, "r") as f:
-            return set(json.load(f))
-    return set()
-
-def save_seen(seen_sms):
-    with open(SEEN_FILE, "w") as f:
-        json.dump(list(seen_sms), f)
-
-seen_sms = load_seen()
-
+# ================= DB =================
 
 def get_conn():
-    return psycopg2.connect(DATABASE_URL)
+    return psycopg2.connect(postgresql://postgres:voQbMdZyzvLkQuFobYhYLPYSEJtrQvjr@postgres.railway.internal:5432/railway)
 
 
 def init_db():
@@ -61,13 +48,11 @@ def mark_seen(sms_id):
     conn.close()
 
 
+# ================= TELEGRAM =================
+
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
 
-
-# =========================
-# CONFIG
-# =========================
 
 BOT_TOKEN = "8870233137:AAEoxO2rYc85mGJJw0QqFP7qM2QxiE5g4Q8"
 
@@ -77,6 +62,7 @@ BROKEN_CHAT_ID = -5522999875
 JOKER_CHAT_ID = -5141561349
 MARTINEZ_CHAT_ID = -5308626568
 KKAZANTSEVV_CHAT_ID = -5387239081
+
 
 TELOBAL_API_URL = "https://my.telobal.com/api/v1/sms/inbox/"
 
@@ -91,15 +77,12 @@ STYLE = {
 }
 
 
-# =========================
-# HELPERS
-# =========================
+# ================= GROUPS (3 номера) =================
 
-def normalize(num):
-    return ''.join(filter(str.isdigit, str(num)))
+def normalize(n):
+    return ''.join(filter(str.isdigit, str(n)))
 
 
-# ✅ 3 места в каждой группе
 ZPD_NUMBERS = [
     normalize("380947100246"),
     normalize("380947100247"),
@@ -131,9 +114,7 @@ KKAZANTSEVV_NUMBERS = [
 ]
 
 
-# =========================
-# UI
-# =========================
+# ================= UI =================
 
 def menu():
     return InlineKeyboardMarkup([
@@ -142,10 +123,7 @@ def menu():
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(
-        "SMS bot started",
-        reply_markup=menu()
-    )
+    await update.message.reply_text("SMS bot started", reply_markup=menu())
 
 
 async def handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -154,9 +132,7 @@ async def handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await q.edit_message_text("Bot running", reply_markup=menu())
 
 
-# =========================
-# API
-# =========================
+# ================= API =================
 
 def get_sms(token):
     try:
@@ -172,9 +148,7 @@ def get_sms(token):
     return []
 
 
-# =========================
-# SEND
-# =========================
+# ================= SEND =================
 
 async def send(app, text, recipient):
 
@@ -197,9 +171,7 @@ async def send(app, text, recipient):
         print("SEND ERROR:", e)
 
 
-# =========================
-# WORKER
-# =========================
+# ================= WORKER =================
 
 async def worker(app):
     while True:
@@ -238,15 +210,11 @@ async def worker(app):
                 await send(app, text, recipient)
 
                 mark_seen(sms_id)
-                seen_sms.add(sms_id)
-                save_seen(seen_sms)
 
         await asyncio.sleep(5)
 
 
-# =========================
-# MAIN
-# =========================
+# ================= MAIN =================
 
 def main():
     init_db()
@@ -259,7 +227,6 @@ def main():
         asyncio.create_task(worker(app))
 
     app.post_init = post_init
-
     app.run_polling()
 
 

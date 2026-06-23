@@ -69,7 +69,7 @@ from telegram.ext import Application, CommandHandler, CallbackQueryHandler, Cont
 # CONFIG
 # =========================
 
-BOT_TOKEN = ""8870233137:AAEoxO2rYc85mGJJw0QqFP7qM2QxiE5g4Q8"
+BOT_TOKEN = "8870233137:AAEoxO2rYc85mGJJw0QqFP7qM2QxiE5g4Q8"
 
 MAIN_CHAT_ID = -1003861206213
 ZPD_CHAT_ID = -5536723301

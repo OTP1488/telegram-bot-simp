@@ -2,6 +2,49 @@ import asyncio
 import requests
 import json
 import os
+import psycopg2
+
+DATABASE_URL = os.getenv("DATABASE_URL")
+
+
+def get_conn():
+    return psycopg2.connect(DATABASE_URL)
+
+
+def init_db():
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS seen_sms (
+            sms_id TEXT PRIMARY KEY
+        );
+    """)
+    conn.commit()
+    cur.close()
+    conn.close()
+
+
+def is_seen(sms_id):
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute("SELECT 1 FROM seen_sms WHERE sms_id=%s", (sms_id,))
+    res = cur.fetchone()
+    cur.close()
+    conn.close()
+    return res is not None
+
+
+def mark_seen(sms_id):
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute("""
+        INSERT INTO seen_sms (sms_id)
+        VALUES (%s)
+        ON CONFLICT DO NOTHING;
+    """, (sms_id,))
+    conn.commit()
+    cur.close()
+    conn.close()
 
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
@@ -35,19 +78,6 @@ STYLE = {
 # HELPERS (SAVE STATE)
 # =========================
 
-SEEN_FILE = "seen_sms.json"
-
-def load_seen():
-    if os.path.exists(SEEN_FILE):
-        with open(SEEN_FILE, "r") as f:
-            return set(json.load(f))
-    return set()
-
-def save_seen():
-    with open(SEEN_FILE, "w") as f:
-        json.dump(list(seen_sms), f)
-
-    print("SAVED:", len(seen_sms))
 
 def normalize(num):
     return ''.join(filter(str.isdigit, str(num)))
@@ -71,21 +101,19 @@ JOKER_NUMBERS = [
 ]
 
 MARTINEZ_NUMBERS = [
-    normalize("380947100597"),
     normalize("0"),
-    normalize("380947100488"),
+    normalize("380947100361"),
+    normalize("380000000003"),
 
 ]
 
 KKAZANTSEVV_NUMBERS = [
     normalize("380947101540"),
     normalize("380947100981"),
-    normalize("0"),
+    normalize("380947100597"),
 
 ]
 
-seen_sms = load_seen()
-print("LOADED SMS:", len(seen_sms))
 
 # =========================
 # UI
@@ -161,7 +189,6 @@ async def send(app, text, recipient):
 # =========================
 # WORKER
 # =========================
-
 async def worker(app):
     while True:
         for label, token in TOKENS.items():
@@ -171,7 +198,11 @@ async def worker(app):
             for sms in sms_list:
 
                 sms_id = sms.get("uu_id") or sms.get("uuid") or sms.get("id")
-                if not sms_id or sms_id in seen_sms:
+
+                if not sms_id:
+                    continue
+
+                if is_seen(sms_id):
                     continue
 
                 dest = sms.get("destination", "")
@@ -195,8 +226,7 @@ async def worker(app):
 
                 await send(app, text, recipient)
 
-                seen_sms.add(sms_id)
-                save_seen()   # 🔥 сохраняем чтобы не повторялось после перезапуска
+                mark_seen(sms_id)
 
         await asyncio.sleep(5)
 
@@ -205,6 +235,7 @@ async def worker(app):
 # =========================
 
 def main():
+    init_db()
     app = Application.builder().token(BOT_TOKEN).build()
 
     app.add_handler(CommandHandler("sms", start))
@@ -218,5 +249,5 @@ def main():
     app.run_polling()
 
 
-if __name__ == "__main__":
+if name == "main":
     main()

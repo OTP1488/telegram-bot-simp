@@ -1,18 +1,75 @@
 import asyncio
 import requests
+import json
 import os
 import psycopg2
+
+DATABASE_URL = os.getenv("DATABASE_URL")
+
+SEEN_FILE = "seen_sms.json"
+
+def load_seen():
+    if os.path.exists(SEEN_FILE):
+        with open(SEEN_FILE, "r") as f:
+            return set(json.load(f))
+    return set()
+
+def save_seen(seen_sms):
+    with open(SEEN_FILE, "w") as f:
+        json.dump(list(seen_sms), f)
+
+seen_sms = load_seen()
+
+
+def get_conn():
+    return psycopg2.connect(DATABASE_URL)
+
+
+def init_db():
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS seen_sms (
+            sms_id TEXT PRIMARY KEY
+        );
+    """)
+    conn.commit()
+    cur.close()
+    conn.close()
+
+
+def is_seen(sms_id):
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute("SELECT 1 FROM seen_sms WHERE sms_id=%s", (sms_id,))
+    res = cur.fetchone()
+    cur.close()
+    conn.close()
+    return res is not None
+
+
+def mark_seen(sms_id):
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute("""
+        INSERT INTO seen_sms (sms_id)
+        VALUES (%s)
+        ON CONFLICT DO NOTHING;
+    """, (sms_id,))
+    conn.commit()
+    cur.close()
+    conn.close()
+
 
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
 
+
 # =========================
-# CONFIG (ТВОИ ДАННЫЕ)
+# CONFIG
 # =========================
 
-BOT_TOKEN = "8870233137:AAEoxO2rYc85mGJJw0QqFP7qM2QxiE5g4Q8"
-
-DATABASE_URL = os.getenv("postgresql://postgres:voQbMdZyzvLkQuFobYhYLPYSEJtrQvjr@postgres.railway.internal:5432/railway")
+BOT_TOKEN = "YOUR_TOKEN"
 
 MAIN_CHAT_ID = -1003861206213
 ZPD_CHAT_ID = -5536723301
@@ -24,8 +81,8 @@ KKAZANTSEVV_CHAT_ID = -5387239081
 TELOBAL_API_URL = "https://my.telobal.com/api/v1/sms/inbox/"
 
 TOKENS = {
-    "MAIN": "40009eefff36915e11beb235e5bff36f73bf5310ad1c8cd2ed555c8011bb4d77",
-    "SECOND": "4d744f96ea88775c823bd27b20c9a77525c6c18c6c8c63a60885a2a908108a49"
+    "MAIN": "TOKEN1",
+    "SECOND": "TOKEN2"
 }
 
 STYLE = {
@@ -33,41 +90,6 @@ STYLE = {
     "SECOND": "🔵 SECOND"
 }
 
-# =========================
-# DB
-# =========================
-
-def get_conn():
-    return psycopg2.connect(DATABASE_URL)
-
-
-def init_db():
-    with get_conn() as conn:
-        with conn.cursor() as cur:
-            cur.execute("""
-                CREATE TABLE IF NOT EXISTS seen_sms (
-                    sms_id TEXT PRIMARY KEY
-                );
-            """)
-        conn.commit()
-
-
-def is_seen(sms_id):
-    with get_conn() as conn:
-        with conn.cursor() as cur:
-            cur.execute("SELECT 1 FROM seen_sms WHERE sms_id=%s", (sms_id,))
-            return cur.fetchone() is not None
-
-
-def mark_seen(sms_id):
-    with get_conn() as conn:
-        with conn.cursor() as cur:
-            cur.execute("""
-                INSERT INTO seen_sms (sms_id)
-                VALUES (%s)
-                ON CONFLICT DO NOTHING;
-            """, (sms_id,))
-        conn.commit()
 
 # =========================
 # HELPERS
@@ -76,6 +98,65 @@ def mark_seen(sms_id):
 def normalize(num):
     return ''.join(filter(str.isdigit, str(num)))
 
+
+# ✅ 3 места в каждой группе
+ZPD_NUMBERS = [
+    normalize("380947100246"),
+    normalize("380947100247"),
+    normalize("380947100248"),
+]
+
+BROKEN_NUMBERS = [
+    normalize("380000000002"),
+    normalize("380000000003"),
+    normalize("380000000004"),
+]
+
+JOKER_NUMBERS = [
+    normalize("380947222222"),
+    normalize("380947333333"),
+    normalize("380947444444"),
+]
+
+MARTINEZ_NUMBERS = [
+    normalize("380947100361"),
+    normalize("380947100362"),
+    normalize("380947100363"),
+]
+
+KKAZANTSEVV_NUMBERS = [
+    normalize("380947101540"),
+    normalize("380947100981"),
+    normalize("380947100597"),
+]
+
+
+# =========================
+# UI
+# =========================
+
+def menu():
+    return InlineKeyboardMarkup([
+        [InlineKeyboardButton("📱 SMS BOT ACTIVE", callback_data="info")]
+    ])
+
+
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(
+        "SMS bot started",
+        reply_markup=menu()
+    )
+
+
+async def handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    q = update.callback_query
+    await q.answer()
+    await q.edit_message_text("Bot running", reply_markup=menu())
+
+
+# =========================
+# API
+# =========================
 
 def get_sms(token):
     try:
@@ -88,40 +169,33 @@ def get_sms(token):
             return r.json().get("result", [])
     except Exception as e:
         print("API ERROR:", e)
-
     return []
+
 
 # =========================
 # SEND
 # =========================
 
 async def send(app, text, recipient):
-    chat_id = MAIN_CHAT_ID
+
+    if recipient in ZPD_NUMBERS:
+        chat_id = ZPD_CHAT_ID
+    elif recipient in BROKEN_NUMBERS:
+        chat_id = BROKEN_CHAT_ID
+    elif recipient in JOKER_NUMBERS:
+        chat_id = JOKER_CHAT_ID
+    elif recipient in MARTINEZ_NUMBERS:
+        chat_id = MARTINEZ_CHAT_ID
+    elif recipient in KKAZANTSEVV_NUMBERS:
+        chat_id = KKAZANTSEVV_CHAT_ID
+    else:
+        chat_id = MAIN_CHAT_ID
 
     try:
         await app.bot.send_message(chat_id=chat_id, text=text)
     except Exception as e:
         print("SEND ERROR:", e)
 
-# =========================
-# UI
-# =========================
-
-def menu():
-    return InlineKeyboardMarkup([
-        [InlineKeyboardButton("📱 SMS BOT ACTIVE", callback_data="info")]
-    ])
-
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(
-        "SMS bot started",
-        reply_markup=menu()
-    )
-
-async def handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    q = update.callback_query
-    await q.answer()
-    await q.edit_message_text("Bot running", reply_markup=menu())
 
 # =========================
 # WORKER
@@ -135,7 +209,7 @@ async def worker(app):
 
             for sms in sms_list:
 
-                sms_id = sms.get("uuid") or sms.get("id")
+                sms_id = sms.get("uu_id") or sms.get("uuid") or sms.get("id")
                 if not sms_id:
                     continue
 
@@ -143,7 +217,12 @@ async def worker(app):
                     continue
 
                 dest = sms.get("destination", "")
-                recipient = dest.get("number") if isinstance(dest, dict) else str(dest or "")
+
+                if isinstance(dest, dict):
+                    recipient = dest.get("number", "")
+                else:
+                    recipient = dest or ""
+
                 recipient = normalize(recipient)
 
                 sender = sms.get("sender", {}).get("number", "")
@@ -157,21 +236,20 @@ async def worker(app):
                 )
 
                 await send(app, text, recipient)
+
                 mark_seen(sms_id)
+                seen_sms.add(sms_id)
+                save_seen(seen_sms)
 
         await asyncio.sleep(5)
+
 
 # =========================
 # MAIN
 # =========================
 
 def main():
-    if not DATABASE_URL:
-        print("❌ DATABASE_URL не установлен")
-        return
-
     init_db()
-
     app = Application.builder().token(BOT_TOKEN).build()
 
     app.add_handler(CommandHandler("sms", start))
@@ -182,7 +260,6 @@ def main():
 
     app.post_init = post_init
 
-    print("BOT STARTED")
     app.run_polling()
 
 

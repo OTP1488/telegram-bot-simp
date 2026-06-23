@@ -4,7 +4,7 @@ import json
 import os
 import psycopg2
 
-DATABASE_URL = os.getenv("DATABASE_URL")
+DATABASE_URL = os.getenv("postgresql://postgres:voQbMdZyzvLkQuFobYhYLPYSEJtrQvjr@postgres.railway.internal:5432/railway")
 
 SEEN_FILE = "seen_sms.json"
 
@@ -69,7 +69,7 @@ from telegram.ext import Application, CommandHandler, CallbackQueryHandler, Cont
 # CONFIG
 # =========================
 
-BOT_TOKEN = "YOUR_TOKEN"
+BOT_TOKEN = ""8870233137:AAEoxO2rYc85mGJJw0QqFP7qM2QxiE5g4Q8"
 
 MAIN_CHAT_ID = -1003861206213
 ZPD_CHAT_ID = -5536723301
@@ -81,8 +81,8 @@ KKAZANTSEVV_CHAT_ID = -5387239081
 TELOBAL_API_URL = "https://my.telobal.com/api/v1/sms/inbox/"
 
 TOKENS = {
-    "MAIN": "TOKEN1",
-    "SECOND": "TOKEN2"
+    "MAIN": "40009eefff36915e11beb235e5bff36f73bf5310ad1c8cd2ed555c8011bb4d77",
+    "SECOND": "4d744f96ea88775c823bd27b20c9a77525c6c18c6c8c63a60885a2a908108a49"
 }
 
 STYLE = {

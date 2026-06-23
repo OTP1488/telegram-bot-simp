@@ -3,7 +3,7 @@ import requests
 import os
 import psycopg2
 
-DATABASE_URL = os.getenv("DATABASE_URL")
+DATABASE_URL = os.getenv("postgresql://postgres:voQbMdZyzvLkQuFobYhYLPYSEJtrQvjr@postgres.railway.internal:5432/railway")
 
 
 # ================= DB =================

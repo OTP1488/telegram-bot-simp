@@ -5,8 +5,7 @@ import psycopg2
 
 # ================= DB =================
 
-DATABASE_URL = os.getenv("voQbMdZyzvLkQuFobYhYLPYSEJtrQvjr@postgres.railway.internal:5432/railway")
-
+DATABASE_URL = os.getenv("DATABASE_URL")
 
 def get_conn():
     return psycopg2.connect(DATABASE_URL)

@@ -3,13 +3,13 @@ import requests
 import os
 import psycopg2
 
-DATABASE_URL = os.getenv("postgresql://postgres:voQbMdZyzvLkQuFobYhYLPYSEJtrQvjr@postgres.railway.internal:5432/railway")
+DATABASE_URL = os.getenv(postgres:voQbMdZyzvLkQuFobYhYLPYSEJtrQvjr@postgres.railway.internal:5432/railway")
 
 
 # ================= DB =================
 
 def get_conn():
-    return psycopg2.connect(postgresql://postgres:voQbMdZyzvLkQuFobYhYLPYSEJtrQvjr@postgres.railway.internal:5432/railway)
+    return psycopg2.connect(DATABASE_URL)
 
 
 def init_db():

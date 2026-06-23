@@ -1,50 +1,40 @@
-import asyncio
-import requests
 import os
 import psycopg2
 
-# ================= DB =================
+DATABASE_URL = os.getenv("DATABASE_URL")
 
-DATABASE_URL = os.getenv("voQbMdZyzvLkQuFobYhYLPYSEJtrQvjr@postgres.railway.internal:5432/railway")
 
 def get_conn():
-    return psycopg2.connect("postgresql://postgres:voQbMdZyzvLkQuFobYhYLPYSEJtrQvjr@postgres.railway.internal:5432/railway")
+    return psycopg2.connect(DATABASE_URL)
 
 
 def init_db():
-    conn = get_conn()
-    cur = conn.cursor()
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS seen_sms (
-            sms_id TEXT PRIMARY KEY
-        );
-    """)
-    conn.commit()
-    cur.close()
-    conn.close()
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS seen_sms (
+                    sms_id TEXT PRIMARY KEY
+                );
+            """)
+        conn.commit()
 
 
 def is_seen(sms_id):
-    conn = get_conn()
-    cur = conn.cursor()
-    cur.execute("SELECT 1 FROM seen_sms WHERE sms_id=%s", (sms_id,))
-    res = cur.fetchone()
-    cur.close()
-    conn.close()
-    return res is not None
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT 1 FROM seen_sms WHERE sms_id=%s", (sms_id,))
+            return cur.fetchone() is not None
 
 
 def mark_seen(sms_id):
-    conn = get_conn()
-    cur = conn.cursor()
-    cur.execute("""
-        INSERT INTO seen_sms (sms_id)
-        VALUES (%s)
-        ON CONFLICT DO NOTHING;
-    """, (sms_id,))
-    conn.commit()
-    cur.close()
-    conn.close()
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                INSERT INTO seen_sms (sms_id)
+                VALUES (%s)
+                ON CONFLICT DO NOTHING;
+            """, (sms_id,))
+        conn.commit()
 
 
 # ================= TELEGRAM =================
@@ -162,12 +152,15 @@ async def worker(app):
 
             for sms in sms_list:
 
-                sms_id = sms.get("uu_id") or sms.get("uuid") or sms.get("id")
+                sms_id = str(sms.get("uu_id") or sms.get("uuid") or sms.get("id"))
                 if not sms_id:
                     continue
 
+                # 🔥 СРАЗУ БЛОКИРУЕМ (ВАЖНО)
                 if is_seen(sms_id):
                     continue
+
+                mark_seen(sms_id)
 
                 dest = sms.get("destination", "")
                 if isinstance(dest, dict):
@@ -187,45 +180,9 @@ async def worker(app):
                     f"💬 {message}"
                 )
 
-                await send(app, text, recipient)
-
-                mark_seen(sms_id)
+                try:
+                    await send(app, text, recipient)
+                except Exception as e:
+                    print("SEND ERROR:", e)
 
         await asyncio.sleep(5)
-
-
-# ================= BOT =================
-
-def menu():
-    return InlineKeyboardMarkup([
-        [InlineKeyboardButton("📱 SMS BOT ACTIVE", callback_data="info")]
-    ])
-
-
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("SMS bot started", reply_markup=menu())
-
-
-async def handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    q = update.callback_query
-    await q.answer()
-    await q.edit_message_text("Bot running", reply_markup=menu())
-
-
-def main():
-    init_db()
-    app = Application.builder().token(BOT_TOKEN).build()
-
-    app.add_handler(CommandHandler("sms", start))
-    app.add_handler(CallbackQueryHandler(handler))
-
-    async def post_init(app):
-        asyncio.create_task(worker(app))
-
-    app.post_init = post_init
-
-    app.run_polling()
-
-
-if __name__ == "__main__":
-    main()

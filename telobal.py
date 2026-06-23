@@ -1,47 +1,14 @@
+import asyncio
+import requests
+import json
 import os
-import psycopg2
-
-DATABASE_URL = os.getenv("DATABASE_URL")
-
-
-def get_conn():
-    return psycopg2.connect(DATABASE_URL)
-
-
-def init_db():
-    with get_conn() as conn:
-        with conn.cursor() as cur:
-            cur.execute("""
-                CREATE TABLE IF NOT EXISTS seen_sms (
-                    sms_id TEXT PRIMARY KEY
-                );
-            """)
-        conn.commit()
-
-
-def is_seen(sms_id):
-    with get_conn() as conn:
-        with conn.cursor() as cur:
-            cur.execute("SELECT 1 FROM seen_sms WHERE sms_id=%s", (sms_id,))
-            return cur.fetchone() is not None
-
-
-def mark_seen(sms_id):
-    with get_conn() as conn:
-        with conn.cursor() as cur:
-            cur.execute("""
-                INSERT INTO seen_sms (sms_id)
-                VALUES (%s)
-                ON CONFLICT DO NOTHING;
-            """, (sms_id,))
-        conn.commit()
-
-
-# ================= TELEGRAM =================
 
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
 
+# =========================
+# 🔧 CONFIG
+# =========================
 
 BOT_TOKEN = "8870233137:AAEoxO2rYc85mGJJw0QqFP7qM2QxiE5g4Q8"
 
@@ -51,7 +18,6 @@ BROKEN_CHAT_ID = -5522999875
 JOKER_CHAT_ID = -5141561349
 MARTINEZ_CHAT_ID = -5308626568
 KKAZANTSEVV_CHAT_ID = -5387239081
-
 
 TELOBAL_API_URL = "https://my.telobal.com/api/v1/sms/inbox/"
 
@@ -65,45 +31,85 @@ STYLE = {
     "SECOND": "🔵 SECOND"
 }
 
+# =========================
+# HELPERS (SAVE STATE)
+# =========================
 
-# ================= GROUPS (3 номера в каждой) =================
+SEEN_FILE = "seen_sms.json"
 
-def normalize(n):
-    return ''.join(filter(str.isdigit, str(n)))
+def load_seen():
+    if os.path.exists(SEEN_FILE):
+        with open(SEEN_FILE, "r") as f:
+            return set(json.load(f))
+    return set()
 
+def save_seen():
+    with open(SEEN_FILE, "w") as f:
+        json.dump(list(seen_sms), f)
+
+    print("SAVED:", len(seen_sms))
+
+def normalize(num):
+    return ''.join(filter(str.isdigit, str(num)))
 
 ZPD_NUMBERS = [
     normalize("380947100246"),
-    normalize("380947100247"),
-    normalize("380947100248"),
+    normalize("0"),
+    normalize("0"),
 ]
 
 BROKEN_NUMBERS = [
+    normalize("0"),
     normalize("380000000002"),
-    normalize("380000000003"),
-    normalize("380000000004"),
+    normalize("0"),
 ]
 
 JOKER_NUMBERS = [
+    normalize("0"),
     normalize("380947222222"),
     normalize("380947333333"),
-    normalize("380947444444"),
 ]
 
 MARTINEZ_NUMBERS = [
+    normalize("0"),
     normalize("380947100361"),
-    normalize("380947100362"),
-    normalize("380947100363"),
+    normalize("380000000003"),
+
 ]
 
 KKAZANTSEVV_NUMBERS = [
     normalize("380947101540"),
     normalize("380947100981"),
     normalize("380947100597"),
+
 ]
 
+seen_sms = load_seen()
+print("LOADED SMS:", len(seen_sms))
 
-# ================= API =================
+# =========================
+# UI
+# =========================
+
+def menu():
+    return InlineKeyboardMarkup([
+        [InlineKeyboardButton("📱 SMS BOT ACTIVE", callback_data="info")]
+    ])
+
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(
+        "SMS bot started",
+        reply_markup=menu()
+    )
+
+async def handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    q = update.callback_query
+    await q.answer()
+    await q.edit_message_text("Bot running", reply_markup=menu())
+
+# =========================
+# API
+# =========================
 
 def get_sms(token):
     try:
@@ -112,37 +118,49 @@ def get_sms(token):
             headers={"Authorization": token},
             timeout=10
         )
+
         if r.status_code == 200:
             return r.json().get("result", [])
+
     except Exception as e:
         print("API ERROR:", e)
+
     return []
 
-
-# ================= SEND =================
+# =========================
+# SEND
+# =========================
 
 async def send(app, text, recipient):
 
     if recipient in ZPD_NUMBERS:
         chat_id = ZPD_CHAT_ID
+
     elif recipient in BROKEN_NUMBERS:
         chat_id = BROKEN_CHAT_ID
+
     elif recipient in JOKER_NUMBERS:
         chat_id = JOKER_CHAT_ID
+    
     elif recipient in MARTINEZ_NUMBERS:
         chat_id = MARTINEZ_CHAT_ID
+    
     elif recipient in KKAZANTSEVV_NUMBERS:
         chat_id = KKAZANTSEVV_CHAT_ID
+
     else:
         chat_id = MAIN_CHAT_ID
 
     try:
-        await app.bot.send_message(chat_id=chat_id, text=text)
+        await app.bot.send_message(
+            chat_id=chat_id,
+            text=text
+        )
     except Exception as e:
         print("SEND ERROR:", e)
-
-
-# ================= WORKER =================
+# =========================
+# WORKER
+# =========================
 
 async def worker(app):
     while True:
@@ -152,17 +170,12 @@ async def worker(app):
 
             for sms in sms_list:
 
-                sms_id = str(sms.get("uu_id") or sms.get("uuid") or sms.get("id"))
-                if not sms_id:
+                sms_id = sms.get("uu_id") or sms.get("uuid") or sms.get("id")
+                if not sms_id or sms_id in seen_sms:
                     continue
-
-                # 🔥 СРАЗУ БЛОКИРУЕМ (ВАЖНО)
-                if is_seen(sms_id):
-                    continue
-
-                mark_seen(sms_id)
 
                 dest = sms.get("destination", "")
+
                 if isinstance(dest, dict):
                     recipient = dest.get("number", "")
                 else:
@@ -180,9 +193,30 @@ async def worker(app):
                     f"💬 {message}"
                 )
 
-                try:
-                    await send(app, text, recipient)
-                except Exception as e:
-                    print("SEND ERROR:", e)
+                await send(app, text, recipient)
+
+                seen_sms.add(sms_id)
+                save_seen()   # 🔥 сохраняем чтобы не повторялось после перезапуска
 
         await asyncio.sleep(5)
+
+# =========================
+# MAIN
+# =========================
+
+def main():
+    app = Application.builder().token(BOT_TOKEN).build()
+
+    app.add_handler(CommandHandler("sms", start))
+    app.add_handler(CallbackQueryHandler(handler))
+
+    async def post_init(app):
+        asyncio.create_task(worker(app))
+
+    app.post_init = post_init
+
+    app.run_polling()
+
+
+if name == "main":
+    main()

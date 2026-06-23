@@ -8,7 +8,7 @@ import psycopg2
 DATABASE_URL = os.getenv("voQbMdZyzvLkQuFobYhYLPYSEJtrQvjr@postgres.railway.internal:5432/railway")
 
 def get_conn():
-    return psycopg2.connect(postgresql://postgres:voQbMdZyzvLkQuFobYhYLPYSEJtrQvjr@postgres.railway.internal:5432/railway)
+    return psycopg2.connect("postgresql://postgres:voQbMdZyzvLkQuFobYhYLPYSEJtrQvjr@postgres.railway.internal:5432/railway")
 
 
 def init_db():

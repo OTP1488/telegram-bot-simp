@@ -53,7 +53,7 @@ def normalize(num):
     return ''.join(filter(str.isdigit, str(num)))
 
 ZPD_NUMBERS = [
-    normalize("380947100968"),
+    normalize("0"),
     normalize("0"),
     normalize("0"),
 ]
@@ -79,8 +79,8 @@ MARTINEZ_NUMBERS = [
 
 KKAZANTSEVV_NUMBERS = [
     normalize("0"),
-    normalize("380947100981"),
-    normalize("380947100717"),
+    normalize("0"),
+    normalize("0"),
 
 ]
 

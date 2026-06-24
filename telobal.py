@@ -170,22 +170,22 @@ async def worker(app):
 
             for sms in sms_list:
 
-    sms_id = sms.get("uu_id") or sms.get("uuid") or sms.get("id")
+            sms_id = sms.get("uu_id") or sms.get("uuid") or sms.get("id")
 
-    print("SMS ID:", sms_id)
-    print("SEEN:", sms_id in seen_sms)
+        print("SMS ID:", sms_id)
+        print("SEEN:", sms_id in seen_sms)
 
-    if not sms_id or sms_id in seen_sms:
-        continue
+        if not sms_id or sms_id in seen_sms:
+            continue
 
-    dest = sms.get("destination", "")
+        dest = sms.get("destination", "")
 
-    if isinstance(dest, dict):
+        if isinstance(dest, dict):
         recipient = dest.get("number", "")
-    else:
-        recipient = dest or ""
+        else:
+            recipient = dest or ""
 
-    recipient = normalize(recipient)
+        recipient = normalize(recipient)
 
                 sender = sms.get("sender", {}).get("number", "")
                 message = sms.get("message", "")

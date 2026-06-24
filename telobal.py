@@ -35,7 +35,7 @@ STYLE = {
 # HELPERS (SAVE STATE)
 # =========================
 
-SEEN_FILE = "seen_sms.json"
+SEEN_FILE = "/var/lib/postgresql/data/seen_sms.json"
 
 def load_seen():
     if os.path.exists(SEEN_FILE):
@@ -86,7 +86,15 @@ KKAZANTSEVV_NUMBERS = [
 
 seen_sms = load_seen()
 print("LOADED SMS:", len(seen_sms))
-print("FIRST IDS:", list(seen_sms)[:10])
+if not seen_sms:
+    for token in TOKENS.values():
+        for sms in get_sms(token):
+            sms_id = sms.get("uu_id") or sms.get("uuid") or sms.get("id")
+            if sms_id:
+                seen_sms.add(sms_id)
+
+    save_seen()
+    print("INITIAL CACHE:", len(seen_sms))
 
 # =========================
 # UI

@@ -162,18 +162,15 @@ async def send(app, text, recipient):
 # WORKER
 # =========================
 
-async def worker(app):
-    while True:
-        for label, token in TOKENS.items():
-
-            sms_list = get_sms(token)
-
-            for sms in sms_list:
-
-        sms_id = sms.get("uu_id") or sms.get("uuid") or sms.get("id")
+    async def worker(app):
+        while True:
+            for label, token in TOKENS.items():
     
-        print("SMS ID:", sms_id)
-        print("SEEN:", sms_id in seen_sms)
+                sms_list = get_sms(token)
+    
+                for sms in sms_list:
+    
+        sms_id = sms.get("uu_id") or sms.get("uuid") or sms.get("id")
     
         if not sms_id or sms_id in seen_sms:
             continue

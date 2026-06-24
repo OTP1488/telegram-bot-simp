@@ -86,6 +86,7 @@ KKAZANTSEVV_NUMBERS = [
 
 seen_sms = load_seen()
 print("LOADED SMS:", len(seen_sms))
+print("FIRST IDS:", list(seen_sms)[:10])
 
 # =========================
 # UI

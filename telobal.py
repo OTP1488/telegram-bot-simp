@@ -170,39 +170,39 @@ async def worker(app):
 
             for sms in sms_list:
 
-            sms_id = sms.get("uu_id") or sms.get("uuid") or sms.get("id")
-
+        sms_id = sms.get("uu_id") or sms.get("uuid") or sms.get("id")
+    
         print("SMS ID:", sms_id)
         print("SEEN:", sms_id in seen_sms)
-
+    
         if not sms_id or sms_id in seen_sms:
             continue
-
+    
         dest = sms.get("destination", "")
-
+    
         if isinstance(dest, dict):
-        recipient = dest.get("number", "")
+            recipient = dest.get("number", "")
         else:
             recipient = dest or ""
-
+    
         recipient = normalize(recipient)
-
-                sender = sms.get("sender", {}).get("number", "")
-                message = sms.get("message", "")
-
-                text = (
-                    f"{STYLE[label]} SMS\n\n"
-                    f"📤 From: {sender}\n"
-                    f"📥 To: {recipient}\n"
-                    f"💬 {message}"
-                )
-
-                await send(app, text, recipient)
-
-                seen_sms.add(sms_id)
-                save_seen()   # 🔥 сохраняем чтобы не повторялось после перезапуска
-
-        await asyncio.sleep(5)
+    
+        sender = sms.get("sender", {}).get("number", "")
+        message = sms.get("message", "")
+    
+                    text = (
+                        f"{STYLE[label]} SMS\n\n"
+                        f"📤 From: {sender}\n"
+                        f"📥 To: {recipient}\n"
+                        f"💬 {message}"
+                    )
+    
+                    await send(app, text, recipient)
+    
+                    seen_sms.add(sms_id)
+                    save_seen()   # 🔥 сохраняем чтобы не повторялось после перезапуска
+    
+            await asyncio.sleep(5)
 
 # =========================
 # MAIN

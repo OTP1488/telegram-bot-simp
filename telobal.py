@@ -86,15 +86,8 @@ KKAZANTSEVV_NUMBERS = [
 
 seen_sms = load_seen()
 print("LOADED SMS:", len(seen_sms))
-if not seen_sms:
-    for token in TOKENS.values():
-        for sms in get_sms(token):
-            sms_id = sms.get("uu_id") or sms.get("uuid") or sms.get("id")
-            if sms_id:
-                seen_sms.add(sms_id)
 
-    save_seen()
-    print("INITIAL CACHE:", len(seen_sms))
+    
 
 # =========================
 # UI
@@ -135,6 +128,19 @@ def get_sms(token):
         print("API ERROR:", e)
 
     return []
+    # Первичный импорт существующих SMS
+if not seen_sms:
+    print("BUILDING INITIAL CACHE...")
+
+    for token in TOKENS.values():
+        for sms in get_sms(token):
+            sms_id = sms.get("uu_id") or sms.get("uuid") or sms.get("id")
+
+            if sms_id:
+                seen_sms.add(sms_id)
+
+    save_seen()
+    print("INITIAL CACHE:", len(seen_sms))
 
 # =========================
 # SEND

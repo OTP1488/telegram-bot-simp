@@ -171,8 +171,12 @@ async def worker(app):
             for sms in sms_list:
 
                 sms_id = sms.get("uu_id") or sms.get("uuid") or sms.get("id")
-                if not sms_id or sms_id in seen_sms:
-                    continue
+
+print("SMS ID:", sms_id)
+print("SEEN:", sms_id in seen_sms)
+
+if not sms_id or sms_id in seen_sms:
+    continue
 
                 dest = sms.get("destination", "")
 

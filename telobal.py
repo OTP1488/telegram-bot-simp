@@ -176,6 +176,9 @@ async def worker(app):
 
                 sms_id = sms.get("uu_id") or sms.get("uuid") or sms.get("id")
 
+                print("SMS ID:", sms_id)
+                print("SMS DATA:", sms)
+
                 if not sms_id or sms_id in seen_sms:
                     continue
 

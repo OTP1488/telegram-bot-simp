@@ -1,1 +1,1 @@
-worker: python telobal.py
+worker: python start.py

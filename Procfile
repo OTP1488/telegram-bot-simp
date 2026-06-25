@@ -1,1 +1,1 @@
-worker: python simp.py
+worker: python telobal.py

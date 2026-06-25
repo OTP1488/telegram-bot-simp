@@ -15,8 +15,7 @@ from telegram.ext import (
 
 import os
 
-BOT_TOKEN = os.getenv("8858371855:AAFzWawMRK4Gg9NTyutAxYhgfLSq8Zk3gL8
-")
+BOT_TOKEN = os.getenv("8858371855:AAFzWawMRK4Gg9NTyutAxYhgfLSq8Zk3gL8")
 SIMPLELOGIN_API_KEY = os.getenv("uhmoblgrrbegpsqvyjpcvcuzagarjcyyetoxgzdakolhiqetzmfpubfptmhb")
 
 # ==========================

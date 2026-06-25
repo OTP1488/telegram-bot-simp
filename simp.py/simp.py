@@ -27,11 +27,6 @@ HEADERS = {
 
 logging.basicConfig(level=logging.INFO)
 
-
-HEADERS = {
-    "Authentication": "uhmoblgrrbegpsqvyjpcvcuzagarjcyyetoxgzdakolhiqetzmfpubfptmhb"
-}
-
 # ==========================
 # МЕНЮ
 # ==========================

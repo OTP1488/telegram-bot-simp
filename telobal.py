@@ -71,7 +71,7 @@ JOKER_NUMBERS = [
 ]
 
 MARTINEZ_NUMBERS = [
-    normalize("380947100280"),
+    normalize("0"),
     normalize("0"),
     normalize("0"),
 
@@ -79,8 +79,8 @@ MARTINEZ_NUMBERS = [
 
 KKAZANTSEVV_NUMBERS = [
     normalize("380947100233"),
-    normalize("380947101776"),
-    normalize("380947100968"),
+    normalize("0"),
+    normalize("380947100280"),
 
 ]
 

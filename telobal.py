@@ -66,7 +66,7 @@ BROKEN_NUMBERS = [
 
 JOKER_NUMBERS = [
     normalize("380947100960"),
-    normalize("0"),
+    normalize("380947100235"),
     normalize("0"),
 ]
 

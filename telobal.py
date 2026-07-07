@@ -78,7 +78,7 @@ MARTINEZ_NUMBERS = [
 ]
 
 KKAZANTSEVV_NUMBERS = [
-    normalize("380947101343"),
+    normalize("0"),
     normalize("0"),
     normalize("0"),
 

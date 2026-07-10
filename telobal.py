@@ -72,7 +72,7 @@ JOKER_NUMBERS = [
 
 MARTINEZ_NUMBERS = [
     normalize("380947100233"),
-    normalize("0"),
+    normalize("380947100151"),
     normalize("0"),
 
 ]

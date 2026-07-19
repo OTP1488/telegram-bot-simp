@@ -59,13 +59,13 @@ ZPD_NUMBERS = [
 ]
 
 BROKEN_NUMBERS = [
-    normalize("0"),
+    normalize("380947100445"),
     normalize("0"),
     normalize("0"),
 ]
 
 JOKER_NUMBERS = [
-    normalize("380947100960"),
+    normalize("0"),
     normalize("0"),
     normalize("0"),
 ]

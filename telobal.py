@@ -60,7 +60,7 @@ ZPD_NUMBERS = [
 
 BROKEN_NUMBERS = [
     normalize("380947100369"),
-    normalize("380947100640"),
+    normalize("0"),
     normalize("380947100775"),
 ]
 
@@ -71,7 +71,7 @@ JOKER_NUMBERS = [
 ]
 
 MARTINEZ_NUMBERS = [
-    normalize("0"),
+    normalize("380947100640"),
     normalize("0"),
     normalize("0"),
 

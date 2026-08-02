@@ -59,7 +59,7 @@ ZPD_NUMBERS = [
 ]
 
 BROKEN_NUMBERS = [
-    normalize("0"),
+    normalize("380947101204"),
     normalize("0"),
     normalize("0"),
 ]
